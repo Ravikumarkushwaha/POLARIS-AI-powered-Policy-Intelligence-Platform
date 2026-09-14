@@ -1,20 +1,302 @@
-# POLARIS â€” Policy intelligence studio
+<div align="center">
 
-POLARIS is a local research workspace for Indian public policy. Submit a policy or document, inspect specialist assessments and their evidence, ask follow-up questions, and explore changed assumptions. React/TypeScript and TanStack Start power the interface; FastAPI, SQLite, local retrieval, trusted-domain web retrieval, and Groq power the backend.
+# 🧭 POLARIS
 
-## What's included
+### Multi-Agent Policy Intelligence for Evidence-Aware Public Decisions
 
-- **Balanced and Deep analysis.** Balanced combines four specialist perspectives into one assessment call, risk/synthesis into another, grounded possible futures into a third, and recommendations into a fourth: **4 planned model calls instead of Deep's 8**. Document parsing runs locally. Scenario and recommendation inputs are compacted from completed findings to remain within the safe request ceiling. Validation repairs and provider retries can still add calls.
-- **A shared, durable queue.** Policy analysis, Ask POLARIS, and scenario-lab jobs share a single FIFO worker and the same shared request/token pacing. Queued positions, started/finished timestamps, stage states, and provider wait deadlines come from the backend.
-- **Partial results and cancellation.** Validated findings are saved after each stage, including scenarios and recommendations. Cancel queued or running work without deleting completed findings. A late response cannot overwrite a cancelled job. Work interrupted by a backend restart resumes valid saved checkpoints. An already dispatched provider request may still consume quota when cancelled.
-- **Recent-result reuse.** Exact matching input, domain, model configuration, analysis mode, and evidence setting reuse active work or a recent completed run. Defaults are one hour with web research and 24 hours with document evidence only. The analysis-code revision is part of the cache key. Refresh bypasses a completed cache hit, but never duplicates an active request.
-- **A responsive workspace.** Desktop sidebar and mobile navigation, light/dark themes, editable illustrative proposals, input/upload tabs, drag-and-drop, file validation, automatic local drafts, history search, and readable empty/error states.
-- **Six-section Quick summary.** What the policy does; likely benefits; tradeoffs and risks; who is affected; uncertainty; recommended actions. Analyst detail exposes metrics, reasoning summaries, source excerpts, geographic estimates, and recommendations. Switching views uses the same saved results and makes no model request. Reading preference is saved locally.
-- **Claim-level evidence drawer.** Important findings expose View evidence. New outputs reference stable document/source IDs. References are checked against the catalog actually sent to that model call, including after prompt compaction and repair. The drawer shows linked excerpts, source URLs, recorded metadata, assumptions, uncertainty, and explicitly linked conflicting evidence. Unlinked findings say so. IDs establish traceability, not proof.
-- **Ask POLARIS.** A floating accessible dialog with saved, separate conversation histories for each run. Answers use bounded follow-up context, completed findings, and supplied evidence. Partial answers are labeled. Sending, queued/waiting, retry, and cancellation states are real; responses are not simulated streaming. Minimize and reopen without losing saved messages.
-- **Possible futures.** The core pipeline generates three policy-specific, evidence-linked scenarios with differentiated mechanisms, outcome points, qualitative likelihoods, and likelihood rationales. The current interface has no What-if tab.
-- **Comparison and exports.** Compare two saved completed policies without model calls. Download text, JSON, and CSV reports or copy a report. CSV exports neutralize spreadsheet formulas in untrusted text.
-- **Background navigation.** Continue browsing keeps backend work running. A persistent in-app indicator reopens the tracked analysis; completion/failure notifications link to saved findings. The selected run survives refresh through `?run=...` and session storage.
+**Turn policy documents into structured findings, traceable evidence, regional insight, realistic future scenarios, and actionable recommendations.**
+
+[![React 19](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Groq](https://img.shields.io/badge/AI-Groq_Only-F55036)](https://groq.com/)
+[![SQLite](https://img.shields.io/badge/Storage-SQLite-003B57?logo=sqlite&logoColor=white)](https://sqlite.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Repository size](https://img.shields.io/github/repo-size/shiv0666/-polaris---multiagent-policy-analyzer)](https://github.com/shiv0666/-polaris---multiagent-policy-analyzer)
+[![Last commit](https://img.shields.io/github/last-commit/shiv0666/-polaris---multiagent-policy-analyzer)](https://github.com/shiv0666/-polaris---multiagent-policy-analyzer/commits/main)
+
+[Explore Features](#-feature-tour) · [Understand the Architecture](#-architecture-at-a-glance) · [Run Locally](#run-locally) · [API Reference](#persistence-and-api) · [Project Handbook](#architecture-handbook)
+
+</div>
+
+---
+
+## 🌍 What is POLARIS?
+
+POLARIS is a full-stack, local-first policy analysis platform focused on Indian public policy. It accepts a policy proposal or document and coordinates specialized AI analysis across economic, environmental, social, legal, budgetary, risk, and implementation perspectives.
+
+Instead of returning one opaque chatbot answer, POLARIS builds a durable analysis workspace. Each stage is structured, validated, saved, and connected to the evidence supplied to that stage. Users can review a concise brief, inspect specialist reasoning, open supporting passages, explore state-level relevance, ask grounded follow-up questions, compare saved policies, and export the result.
+
+The active AI provider is **Groq only**. Documents are parsed locally. SQLite stores runs, partial checkpoints, evidence, telemetry, and follow-up histories.
+
+> [!IMPORTANT]
+> POLARIS provides AI-assisted decision support. Its impact scores, confidence values, scenarios, recommendations, and state weights are analytical estimates—not measured outcomes, official forecasts, legal advice, or proof of causality.
+
+## 🎯 Problem statement
+
+Public-policy material is usually long, fragmented, technical, and difficult to evaluate consistently. A decision-maker may need to understand economic effects, environmental consequences, social distribution, budget constraints, legal feasibility, execution risks, regional differences, and source quality at the same time.
+
+Common analysis workflows create several problems:
+
+- policy documents are summarized without preserving uncertainty;
+- different impact domains are mixed into one generic answer;
+- recommendations become reusable boilerplate instead of responding to the actual findings;
+- citations are presented without a clear link to the context available to the model;
+- long analyses fail when provider token or request limits are reached;
+- partial work disappears after an error or restart;
+- national conclusions are repeated as if they were state-specific facts;
+- policy comparison requires manual reading across separate reports;
+- nontechnical users cannot easily move between a quick brief and analytical detail.
+
+## 💡 The POLARIS approach
+
+POLARIS addresses those problems with a staged, evidence-aware architecture:
+
+| Challenge                  | POLARIS response                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| One-dimensional summaries  | Separate economic, environment, social, legal/budget, and risk perspectives          |
+| Generic repeated actions   | Dedicated Groq recommendation stage grounded in completed findings                   |
+| Repeated future narratives | Validated policy-specific possible futures with mechanisms and likelihood rationales |
+| Weak source traceability   | Stable evidence catalog IDs and a claim-level evidence drawer                        |
+| Long-document overflow     | Local extraction, chunk retrieval, compaction, and a hard request ceiling            |
+| Provider rate limits       | Shared token reservation, request pacing, retry telemetry, and FIFO execution        |
+| Lost work                  | Immediate stage checkpoints, cancellation safety, resume, and restart recovery       |
+| Misleading regional claims | Relative state weights plus concise dossiers that must acknowledge missing evidence  |
+| Complex output             | Quick summary and analyst-detail reading modes over the same saved result            |
+| Isolated reports           | Searchable library, comparison workspace, Ask POLARIS, and safe exports              |
+
+## 👥 Who is it for?
+
+| Audience                               | How POLARIS helps                                                                       |
+| -------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Policy researchers**                 | Structure a first-pass review and trace claims back to saved source passages            |
+| **Government and public-sector teams** | Surface delivery risks, affected groups, budget questions, and monitoring needs         |
+| **Think tanks and NGOs**               | Compare policy narratives across economic, social, environmental, and regional lenses   |
+| **Students and academic teams**        | Study multi-agent orchestration, RAG, validation, and policy-analysis workflows         |
+| **Journalists and civic analysts**     | Create an organized evidence map before deeper verification                             |
+| **Developers**                         | Explore a production-style React/FastAPI AI system with durable jobs and quota controls |
+
+## 🗺️ Target areas
+
+POLARIS is designed around cross-domain public-policy questions, including:
+
+- economic development, trade, investment, employment, and public finance;
+- agriculture, rural livelihoods, income support, and food systems;
+- energy transition, manufacturing, transport, climate, water, and pollution;
+- health, education, housing, welfare access, and social inclusion;
+- digital public infrastructure, innovation, regulation, and administrative delivery;
+- legal authority, institutional coordination, compliance, and implementation capacity;
+- state and union-territory exposure across India.
+
+A domain hint can guide classification, but the parser and specialists use the supplied policy content as the authoritative analysis subject.
+
+## ✨ Feature tour
+
+### Input and research
+
+- Paste up to **200,000 characters** of policy text.
+- Upload **PDF, DOCX, TXT, Markdown, CSV, or JSON** files up to **10 MB**.
+- Parse documents locally before model analysis.
+- Drag and drop files with readable validation errors.
+- Save text drafts locally in the browser.
+- Enable or disable optional trusted-source web research.
+- Reuse recent identical results or force a fresh analysis.
+
+### Multi-agent analysis
+
+- **Balanced mode:** four planned Groq calls with combined specialist work.
+- **Deep mode:** eight planned Groq calls with four independent domain stages.
+- Economic, environmental, social, legal/budget, and risk analysis.
+- Executive verdict and six-section policy brief.
+- Overall impact magnitude, risk level, confidence, and rationale.
+- Structured metric directions, magnitudes, assumptions, and uncertainty.
+- Validation repair for malformed or incomplete JSON.
+
+### Evidence and transparency
+
+- Local document passage retrieval.
+- Optional bounded public web retrieval.
+- Stable evidence IDs supplied per model call.
+- Claim-level evidence drawer.
+- Source excerpts, links, retrieval status, assumptions, uncertainty, and conflicts.
+- Automatic removal of citation IDs that were not in the supplied catalog.
+- Clear labeling of partial analysis and link-only sources.
+
+### Decision workspace
+
+- Quick summary for rapid reading.
+- Analyst detail for specialists.
+- Three differentiated possible futures.
+- Dynamic policy-specific recommendations.
+- Interactive India atlas with 36 states and union territories.
+- Compact five-point state dossiers.
+- Ask POLARIS grounded in the selected run.
+- Searchable policy library.
+- Two-policy comparison without another AI call.
+- Text, complete JSON, and safe CSV exports.
+
+### Reliability and UX
+
+- Durable FIFO job queue.
+- Queue position and real provider wait states.
+- Token and API-request telemetry.
+- Cancel, retry, resume, and restart recovery.
+- Immediate checkpoint persistence.
+- Background navigation with completion notifications.
+- Responsive glassmorphic interface.
+- Light and dark modes.
+- Keyboard focus and reduced-motion support.
+- Accessible empty, partial, offline, and error states.
+
+## 🧭 User journey
+
+```mermaid
+flowchart LR
+    A[Paste policy or upload document] --> B[Choose Balanced or Deep]
+    B --> C[Local parsing and evidence retrieval]
+    C --> D[Specialist analysis]
+    D --> E[Risk and executive synthesis]
+    E --> F[Possible futures]
+    F --> G[Recommendations]
+    G --> H{Explore result}
+    H --> I[Quick summary]
+    H --> J[Evidence]
+    H --> K[State insights]
+    H --> L[Actions]
+    H --> M[Ask POLARIS]
+    H --> N[Compare and export]
+```
+
+## 🏗️ Architecture at a glance
+
+```mermaid
+flowchart TB
+    subgraph Client["Presentation layer"]
+        UI[React 19 + TypeScript]
+        Router[TanStack Router]
+        Query[TanStack Query]
+        Design[Tailwind 4 + Radix UI]
+    end
+
+    subgraph API["Application layer"]
+        FastAPI[FastAPI REST API]
+        Manager[Single-worker RunManager]
+        Workspace[Chat and dossier jobs]
+    end
+
+    subgraph Intelligence["Intelligence layer"]
+        Parse[Policy parser]
+        RAG[Local keyword RAG]
+        Web[Optional trusted web retrieval]
+        Agents[Specialist agents]
+        Validate[Normalize + validate + citation filter]
+        Groq[Groq API]
+    end
+
+    subgraph Data["Persistence layer"]
+        SQLite[(SQLite)]
+        Geo[India GeoJSON]
+        Seeds[Regional seed data]
+    end
+
+    UI --> Router
+    Router --> Query
+    Query --> FastAPI
+    FastAPI --> Manager
+    Manager --> Parse
+    Parse --> RAG
+    RAG --> Web
+    Web --> Agents
+    Agents <--> Groq
+    Agents --> Validate
+    Validate --> SQLite
+    FastAPI --> Workspace
+    Workspace <--> Groq
+    Workspace --> SQLite
+    SQLite --> FastAPI
+    Geo --> UI
+    Seeds --> Agents
+```
+
+### Core technology
+
+| Layer     | Technology                                                              |
+| --------- | ----------------------------------------------------------------------- |
+| Frontend  | React 19, TypeScript 5, TanStack Start, TanStack Router, TanStack Query |
+| UI        | Tailwind CSS 4, Radix UI, Lucide, Recharts, Sonner                      |
+| Backend   | Python 3.11+, FastAPI, Uvicorn, Pydantic, HTTPX                         |
+| AI        | Groq structured JSON generation with model fallbacks                    |
+| Retrieval | Local keyword RAG and optional trusted-source web retrieval             |
+| Documents | pypdf, python-docx, local UTF-8 extraction                              |
+| Storage   | SQLite with durable JSON run payloads                                   |
+| Build     | Vite 8 and Nitro                                                        |
+| Testing   | TypeScript, ESLint, Prettier, SSR render checks, pytest                 |
+
+## 🔍 What makes this project different?
+
+### Evidence-aware rather than citation-decorated
+
+Every model stage receives a bounded evidence catalog. Returned IDs are checked against that exact catalog. Unknown IDs are removed instead of silently mapped to unrelated sources.
+
+### Durable rather than request-bound
+
+Long-running work is queued in the backend and saved stage by stage. Closing a request, refreshing the page, navigating elsewhere, or restarting the backend does not automatically destroy completed findings.
+
+### Quota-aware rather than retry-heavy
+
+POLARIS estimates request size before dispatch, reserves tokens, serializes local work, respects provider wait headers, compacts repeated context, and exposes telemetry to the interface.
+
+### Policy-specific rather than template-driven
+
+Possible futures and recommendations are produced by dedicated Groq stages using the current policy’s parsed scope, specialist findings, risks, and evidence. Generic fallback cards are not presented as final analysis.
+
+### Honest about geographic uncertainty
+
+State views distinguish national inference, relative weights, direct source mentions, and missing local evidence. Dossiers are concise by design and cannot invent local statistics.
+
+## 📊 Output model
+
+A successful run produces:
+
+```text
+Policy input
+├── Parsed policy profile
+├── Retrieved document passages
+├── Optional web sources
+├── Evidence catalog
+├── Specialist findings
+│   ├── Economic
+│   ├── Environmental
+│   ├── Social
+│   ├── Legal and budget
+│   └── Risk
+├── Executive synthesis
+│   ├── Verdict
+│   ├── Impact magnitude
+│   ├── Risk level
+│   ├── Confidence basis
+│   └── Six-section brief
+├── Three possible futures
+├── Policy-specific recommendations
+├── State exposure weights
+└── Lifecycle and quota telemetry
+```
+
+## 📚 Documentation map
+
+| If you want to…          | Read                                                                |
+| ------------------------ | ------------------------------------------------------------------- |
+| Start the app            | [Run locally](#run-locally)                                         |
+| Understand API limits    | [Quota protection](#quota-protection)                               |
+| Inspect evidence rules   | [Evidence and analytical quality](#evidence-and-analytical-quality) |
+| Integrate with the API   | [Persistence and API](#persistence-and-api)                         |
+| Run validation           | [Checks](#checks)                                                   |
+| Understand every service | [Architecture handbook](#architecture-handbook)                     |
+| Find a module            | [Complete module catalog](#complete-module-catalog)                 |
+| Prepare a release        | [Operations guide](#operations-guide)                               |
+| Review constraints       | [Remaining limits](#remaining-limits)                               |
+
+---
 
 ## Run locally
 
@@ -68,7 +350,7 @@ POLARIS_WEB_CACHE_TTL_SECONDS=3600
 POLARIS_DOCUMENT_CACHE_TTL_SECONDS=86400
 ```
 
-Chat and scenario analysis each have one planned call, plus bounded validation/provider retries. Merely opening chat, moving assumption controls, browsing history, switching summary/detail, comparing runs, or exporting reports makes no Groq calls.
+Ask POLARIS and state dossiers each use one planned compact call, plus bounded validation/provider retries. Merely opening chat, browsing history, switching summary/detail, selecting states, comparing runs, or exporting reports makes no Groq calls.
 
 ## Evidence and analytical quality
 
@@ -104,7 +386,7 @@ Metadata is shown only when actually available. Plain text/PDF extraction curren
 
 Older runs remain readable. They do not receive fabricated citations, new brief sections, or recommendations. Any later chat on an older run can cite the specific catalog supplied to that chat; this does not retroactively attach those citations to the original analysis.
 
-Impact values are **0â€“100 magnitude indices**, not benefit percentages. A score of 1 stays 1/100. Confidence is model-assessed evidence support, not measured accuracy. Aggregate confidence is the arithmetic mean of four domain confidences and risk confidence. Scenario likelihoods must be finite, individually between 5 and 90, have rationales, and total 100; only minor rounding discrepancies are normalized.
+Impact values are **0Ã¢â‚¬â€œ100 magnitude indices**, not benefit percentages. A score of 1 stays 1/100. Confidence is model-assessed evidence support, not measured accuracy. Aggregate confidence is the arithmetic mean of four domain confidences and risk confidence. Scenario likelihoods must be finite, individually between 5 and 90, have rationales, and total 100; only minor rounding discrepancies are normalized.
 
 ## Persistence and API
 
@@ -177,7 +459,7 @@ Groq is the only supported model provider. Browser automation may still be neede
 
 Backend: `main.py`, `run_manager.py`, `db.py`, `run_cache.py`, `pipeline.py`, `groq_client.py`, `evidence.py`, `workspace.py`, `json_util.py`, and `web_retriever.py`.
 
-Frontend: `src/routes/index.tsx`, `src/lib/polaris-api.ts`, and the POLARIS components: PolicyForm, RunProgress, DetailedDashboard, QuickSummary, EvidenceDrawer, AskPolaris, ScenarioLab, ComparisonWorkspace, RunHistory, Sidebar, TopBar, and SettingsPanel.
+Frontend: `src/routes/index.tsx`, `src/lib/polaris-api.ts`, and the POLARIS components: PolicyForm, RunProgress, DetailedDashboard, QuickSummary, EvidenceDrawer, AskPolaris, StateInsights, IndiaMap, ComparisonWorkspace, RunHistory, Sidebar, TopBar, and SettingsPanel.
 
 The Lovable integration rule still applies: do not rewrite published Git history. No deployment or push is needed to run this workspace locally.
 
@@ -372,7 +654,7 @@ The Windows launcher writes frontend and backend stdout/stderr logs under `.runt
 - [ ] Text, JSON, and CSV exports open safely.
 - [ ] Light, dark, desktop, and mobile layouts remain readable.
 
-## A–Z project index
+## Aâ€“Z project index
 
 | Letter | Project concept                                                         |
 | ------ | ----------------------------------------------------------------------- |
