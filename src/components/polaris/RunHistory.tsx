@@ -8,13 +8,19 @@ import {
   History,
   RefreshCw,
   Search,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NetworkUnreachableError, getRunHistory, type RunHistoryItem } from "@/lib/polaris-api";
+import {
+  NetworkUnreachableError,
+  deleteRun,
+  getRunHistory,
+  type RunHistoryItem,
+} from "@/lib/polaris-api";
 
 const ACTIVE_STATUSES = new Set([
   "pending",
@@ -128,6 +134,20 @@ export function RunHistory({
   const complete = items.filter((item) => item.status === "complete").length;
   const failed = items.filter((item) => item.status === "error").length;
   const active = items.filter((item) => ACTIVE_STATUSES.has(item.status)).length;
+
+  const handleDelete = async (runId: string) => {
+    const confirmed = window.confirm("Delete this policy from the library?");
+    if (!confirmed) return;
+    try {
+      await deleteRun(runId);
+      setItems((current) => current.filter((item) => item.run_id !== runId));
+      setTotal((current) => Math.max(0, current - 1));
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error ? deleteError.message : "The policy could not be deleted.",
+      );
+    }
+  };
 
   return (
     <main className="mx-auto w-full max-w-7xl px-5 py-8 lg:px-10 lg:py-10">
@@ -262,9 +282,18 @@ export function RunHistory({
                   </div>
                 </div>
 
-                <Button variant="outline" onClick={() => onOpenRun(item.run_id)}>
-                  Open analysis
-                </Button>
+                <div className="flex flex-wrap gap-2 lg:justify-end">
+                  <Button variant="outline" onClick={() => onOpenRun(item.run_id)}>
+                    Open analysis
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => void handleDelete(item.run_id)}
+                    aria-label={`Delete ${item.title}`}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  </Button>
+                </div>
               </article>
             ))}
           </div>

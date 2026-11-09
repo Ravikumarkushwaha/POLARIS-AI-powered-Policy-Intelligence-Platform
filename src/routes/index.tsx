@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -51,6 +51,7 @@ function remember(key: string, value: string | null) {
   }
 }
 function Dashboard() {
+  const navigate = useNavigate();
   const [runId, setRunId] = useState<string | null>(null);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -285,14 +286,20 @@ function Dashboard() {
             ? "history"
             : view === "compare"
               ? "compare"
-              : runId
-                ? "dashboard"
-                : "new"
+              : view === "insights"
+                ? "insights"
+                : runId
+                  ? "dashboard"
+                  : "new"
         }
         onDashboard={() => setView("analysis")}
         onNewAnalysis={reset}
         onHistory={() => setView("history")}
         onCompare={() => setView("compare")}
+        onPolicyInsights={() => {
+          setView("insights");
+          void navigate({ to: "/policy-insights" });
+        }}
         onSettings={() => setSettingsOpen(true)}
         online={online}
         configured={runtime.data?.configured ?? false}
@@ -307,6 +314,10 @@ function Dashboard() {
           onNewAnalysis={reset}
           onHistory={() => setView("history")}
           onCompare={() => setView("compare")}
+          onPolicyInsights={() => {
+            setView("insights");
+            void navigate({ to: "/policy-insights" });
+          }}
           onSettings={() => setSettingsOpen(true)}
         />
         {showIndicator && (

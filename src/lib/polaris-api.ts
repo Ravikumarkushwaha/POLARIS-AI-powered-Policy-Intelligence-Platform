@@ -276,6 +276,12 @@ export function cancelRun(runId: string) {
   return request<Run>(`/api/runs/${encodeURIComponent(runId)}/cancel`, { method: "POST" });
 }
 
+export function deleteRun(runId: string) {
+  return request<{ deleted: boolean }>(`/api/runs/${encodeURIComponent(runId)}`, {
+    method: "DELETE",
+  });
+}
+
 export type RuntimeStatus = {
   configured: boolean;
   provider?: string;

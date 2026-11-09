@@ -16,6 +16,7 @@ const server = await createServer({
 });
 try {
   const { QuickSummary } = await server.ssrLoadModule("/src/components/polaris/QuickSummary.tsx");
+  const { resolvePolicyInsightsRunId } = await server.ssrLoadModule("/src/routes/policy-insights.tsx");
   const { DetailedDashboard } = await server.ssrLoadModule(
     "/src/components/polaris/DetailedDashboard.tsx",
   );
@@ -28,6 +29,19 @@ try {
     "/src/lib/report-export.ts",
   );
   const { BRIEF_SECTIONS } = await server.ssrLoadModule("/src/lib/brief-sections.ts");
+  assert.equal(
+    resolvePolicyInsightsRunId("selected-run", [
+      { run_id: "selected-run", status: "complete" },
+      { run_id: "older-run", status: "complete" },
+    ]),
+    "selected-run",
+    "Selected policy wins over latest history fallback",
+  );
+  assert.equal(
+    resolvePolicyInsightsRunId(null, [{ run_id: "older-run", status: "complete" }]),
+    "older-run",
+    "Latest complete run is used when no selection exists",
+  );
   const base = {
     run_id: "render-test",
     status: "pending",

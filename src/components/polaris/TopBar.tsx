@@ -6,6 +6,7 @@ import {
   Moon,
   Plus,
   Settings2,
+  Sparkles,
   Sun,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ export function TopBar({
   onNewAnalysis,
   onHistory,
   onCompare,
+  onPolicyInsights,
   onSettings,
 }: {
   view: WorkspaceView;
@@ -24,6 +26,7 @@ export function TopBar({
   onNewAnalysis: () => void;
   onHistory: () => void;
   onCompare: () => void;
+  onPolicyInsights: () => void;
   onSettings: () => void;
 }) {
   const [light, setLight] = useState(true);
@@ -58,9 +61,11 @@ export function TopBar({
             ? "Policy library"
             : view === "compare"
               ? "Compare policies"
-              : hasRun
-                ? "Policy analysis"
-                : "New analysis"}
+              : view === "insights"
+                ? "Policy insights"
+                : hasRun
+                  ? "Policy analysis"
+                  : "New analysis"}
         </span>
       </div>
       <div className="flex items-center gap-1 sm:gap-3">
@@ -93,6 +98,15 @@ export function TopBar({
           className="lg:hidden"
         >
           <GitCompareArrows className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onPolicyInsights}
+          aria-label="Policy insights"
+          className="lg:hidden"
+        >
+          <Sparkles className="size-4" />
         </Button>
         <Button
           variant="ghost"

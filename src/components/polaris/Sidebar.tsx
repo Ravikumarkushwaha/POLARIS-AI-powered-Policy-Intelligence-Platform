@@ -8,23 +8,26 @@ import {
   Plus,
   Settings2,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
-export type WorkspaceView = "analysis" | "history" | "compare";
+export type WorkspaceView = "analysis" | "history" | "compare" | "insights";
 export function Sidebar({
   activeAction,
   onDashboard,
   onNewAnalysis,
   onHistory,
   onCompare,
+  onPolicyInsights,
   onSettings,
   online,
   configured,
 }: {
-  activeAction: "dashboard" | "new" | "history" | "compare";
+  activeAction: "dashboard" | "new" | "history" | "compare" | "insights";
   onDashboard: () => void;
   onNewAnalysis: () => void;
   onHistory: () => void;
   onCompare: () => void;
+  onPolicyInsights: () => void;
   onSettings: () => void;
   online: boolean | null;
   configured: boolean;
@@ -33,6 +36,7 @@ export function Sidebar({
     { label: "Analysis workspace", icon: LayoutDashboard, action: "dashboard", click: onDashboard },
     { label: "Policy library", icon: History, action: "history", click: onHistory },
     { label: "Compare policies", icon: GitCompareArrows, action: "compare", click: onCompare },
+    { label: "Policy Insights", icon: Sparkles, action: "insights", click: onPolicyInsights },
   ];
   return (
     <aside className="glass-sidebar hidden h-screen w-[248px] shrink-0 flex-col border-r border-sidebar-border px-5 py-7 text-sidebar-foreground lg:flex">

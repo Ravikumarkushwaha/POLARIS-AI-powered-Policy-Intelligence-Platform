@@ -19,11 +19,10 @@ from json_util import parse_json_object
 from evidence import supplied_ids, sanitize_citations
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-# The account's GPT-OSS quotas can reject requests before consuming any tokens.
-# Qwen is the proven available model for this project, so do not create a 429
-# merely to discover that fact at the start of every pipeline stage.
-DEFAULT_MODEL = "qwen/qwen3.6-27b"
-DEFAULT_FALLBACK_MODELS = "openai/gpt-oss-20b,openai/gpt-oss-120b"
+# Prefer Groq's supported OSS and Llama models instead of an outdated Qwen
+# ID that can return 404s for accounts without access to that specific model.
+DEFAULT_MODEL = "openai/gpt-oss-20b"
+DEFAULT_FALLBACK_MODELS = "openai/gpt-oss-120b,llama-3.3-70b-versatile"
 TEMPERATURE = 0.3
 
 # Groq's free-tier limits are shared by every pipeline stage. Serializing calls
@@ -183,8 +182,12 @@ def _compact_request_value(value: Any, level: int, key: str = "") -> Any:
         elif key == "points":
             limit = max(1, 3 - level // 4)
         elif key == "metric_effects":
-            limit = max(2, 4 - level // 3)
-        elif key in {"goals", "stakeholders", "affected_sectors"}:
+            limit = max(1, 3 - level // 3)
+        elif key == "evidence_ids":
+            limit = max(0, 3 - level // 2)
+        elif key == "affected_states_weight":
+            limit = max(3, 8 - level)
+        elif key in {"goals", "stakeholders", "affected_sectors", "top_affected_states"}:
             limit = max(3, 9 - level)
         items = value[:limit] if limit is not None else value
         return [_compact_request_value(item, level, key) for item in items]
@@ -195,22 +198,25 @@ def _compact_request_value(value: Any, level: int, key: str = "") -> Any:
                 from rag import compact_policy_text
                 return compact_policy_text(value, max_characters=max(600, 5000 - level * 450))
             text_caps = {
-                "text": max(100, 700 - level * 110),
-                "reasoning": max(240, 1000 - level * 130),
-                "analysis": max(240, 1000 - level * 130),
-                "justification": max(240, 900 - level * 110),
-                "body": max(180, 700 - level * 80),
-                "probability_rationale": max(120, 500 - level * 55),
-                "confidence_rationale": max(120, 500 - level * 55),
-                "description": max(160, 600 - level * 60),
-                "why": max(140, 500 - level * 50),
-                "title": max(90, 220 - level * 18),
-                "uncertainty": max(90, 300 - level * 20),
-                "metric": max(100, 300 - level * 20),
+                "text": max(100, 500 - level * 90),
+                "reasoning": max(160, 700 - level * 110),
+                "analysis": max(160, 700 - level * 110),
+                "justification": max(180, 600 - level * 90),
+                "body": max(140, 500 - level * 60),
+                "probability_rationale": max(100, 300 - level * 40),
+                "confidence_rationale": max(100, 300 - level * 40),
+                "description": max(140, 400 - level * 45),
+                "why": max(120, 300 - level * 35),
+                "title": max(80, 180 - level * 17),
+                "uncertainty": max(80, 200 - level * 18),
+                "metric": max(90, 200 - level * 20),
             }
             if key in text_caps:
                 return _truncate_preserving_ends(value, text_caps[key])
         return value
+
+    if level >= 1 and key in {"evidence_ids", "conflicting_evidence_ids", "top_affected_states", "affected_states_weight", "state_reference", "state_seed_data"}:
+        return {"compacted": True, "note": "Downstream synthesis keeps only the strongest findings, not raw evidence lists."}
 
     if key == "state_seed_data" and level >= 3:
         # Downstream Risk/Scenario calls already receive state weights computed

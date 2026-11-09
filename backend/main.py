@@ -159,7 +159,7 @@ async def _submit_run(
     if not policy_text:
         raise HTTPException(status_code=422, detail="policy_text is required")
     if len(policy_text) > MAX_POLICY_CHARACTERS:
-        raise HTTPException(status_code=422, detail=f"Policy text must be at most {MAX_POLICY_CHARACTERS:,} characters")
+        policy_text = policy_text[:MAX_POLICY_CHARACTERS]
     if domain_hint and len(domain_hint) > 200:
         raise HTTPException(status_code=422, detail="Domain hint must be at most 200 characters")
     manager = _manager()
@@ -320,6 +320,20 @@ async def cancel_run(run_id: str) -> dict:
         raise HTTPException(status_code=404, detail="run not found") from exc
     payload["runtime"] = _manager().run_state(run_id)
     return payload
+
+
+@app.delete("/api/runs/{run_id}")
+async def delete_run(run_id: str) -> dict:
+    payload = await db.get_run(run_id)
+    if payload is None or payload.get("_job_kind"):
+        raise HTTPException(status_code=404, detail="run not found")
+    try:
+        await _manager().cancel(run_id)
+    except KeyError:
+        pass
+    await db.delete_run(run_id)
+    return {"deleted": True}
+
 
 workspace.configure(_manager)
 app.include_router(workspace.router)

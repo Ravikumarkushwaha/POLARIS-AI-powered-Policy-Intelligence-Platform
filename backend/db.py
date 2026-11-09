@@ -250,7 +250,26 @@ def _delete_job_sync(run_id: str) -> None:
     finally:
         conn.close()
 
+
+def _delete_run_sync(run_id: str) -> None:
+    conn = _connect()
+    try:
+        conn.execute(
+            "DELETE FROM runs WHERE run_id = ? OR json_extract(payload, '$.parent_run_id') = ?",
+            (run_id, run_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 async def delete_scenario(run_id: str) -> None:
     await init_db()
     async with _lock:
         await _in_thread(_delete_job_sync, run_id)
+
+
+async def delete_run(run_id: str) -> None:
+    await init_db()
+    async with _lock:
+        await _in_thread(_delete_run_sync, run_id)

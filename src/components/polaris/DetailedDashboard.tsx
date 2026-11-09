@@ -3,10 +3,8 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  Check,
   ChevronDown,
   CircleDollarSign,
-  Clipboard,
   Download,
   ExternalLink,
   FileText,
@@ -24,7 +22,6 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { EvidenceButton } from "./EvidenceDrawer";
 import { QuickSummary } from "./QuickSummary";
@@ -40,13 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Run } from "@/lib/polaris-api";
-import {
-  asPercent,
-  buildReportText,
-  downloadReport,
-  policyTitle,
-  safeSourceUrl,
-} from "@/lib/report-export";
+import { asPercent, downloadReport, policyTitle, safeSourceUrl } from "@/lib/report-export";
 
 const AGENT_META = {
   economic: { label: "Economy", icon: CircleDollarSign, tone: "text-sky-500 bg-sky-500/10" },
@@ -374,21 +365,11 @@ function ActionWorkspace({ run }: { run: Run }) {
 }
 
 export function DetailedDashboard({ run }: { run: Run }) {
-  const [copied, setCopied] = useState(false);
   const [detail, setDetail] = useDisplayPreference();
   const synthesis = run.synthesis;
   const parsed = run.parsed_policy;
   const scenarios = run.scenario_set?.scenarios ?? [];
   const effects = synthesis?.top_3_effects ?? [];
-  const copyReport = async () => {
-    try {
-      await navigator.clipboard.writeText(buildReportText(run));
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Clipboard is unavailable. Use Export to download the report.");
-    }
-  };
   return (
     <main className="workspace-enter min-w-0 flex-1 px-4 py-6 text-foreground sm:px-7 lg:px-9">
       <div className="mx-auto max-w-[1440px] space-y-6">
@@ -419,11 +400,6 @@ export function DetailedDashboard({ run }: { run: Run }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={copyReport}>
-              {copied ? <Check /> : <Clipboard />}
-              <span className="hidden sm:inline">{copied ? "Copied" : "Copy report"}</span>
-              <span className="sr-only sm:hidden">{copied ? "Copied report" : "Copy report"}</span>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm">

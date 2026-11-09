@@ -307,6 +307,56 @@ def test_oversized_request_compacts_evidence_but_preserves_core_policy(monkeypat
     assert len(compacted["web_sources"]) < len(payload["web_sources"])
 
 
+def test_risk_synthesis_payload_compacts_nested_findings_to_ceiling(monkeypatch):
+    monkeypatch.setenv("GROQ_TOKENS_PER_MINUTE", "8000")
+    monkeypatch.setenv("GROQ_TPM_SAFETY_RATIO", "0.7")
+    monkeypatch.setenv("GROQ_MAX_REQUEST_TOKENS", "5500")
+
+    domains = {}
+    for name in ("economic", "environment", "social", "legal_budget"):
+        domains[name] = {
+            "metric_effects": [
+                {
+                    "metric": f"{name} impact {idx}",
+                    "direction": "positive",
+                    "magnitude": "High",
+                    "confidence": 0.88,
+                    "evidence_ids": [f"doc-{name}-{idx}-{j}" for j in range(10)],
+                }
+                for idx in range(8)
+            ],
+            "reasoning": ("Evidence-heavy response " * 300) + "This policy affects many groups and sectors.",
+            "uncertainty": "Large uncertainty remains given incomplete local evidence. " * 200,
+            "affected_states_weight": {f"State {idx}": 0.9 for idx in range(30)},
+            "evidence_ids": [f"doc-{name}-{idx}" for idx in range(12)],
+        }
+
+    payload = {
+        "parsed_policy": {
+            "domain": "Infrastructure",
+            "goals": ["Reduce logistics costs", "Improve regional connectivity"],
+            "stakeholders": ["farmers", "transporters", "state agencies"],
+            "affected_sectors": ["logistics", "energy", "housing"],
+        },
+        **domains,
+        "risk": {
+            "risk_level": "High",
+            "confidence": 0.82,
+            "justification": ("Risk is elevated because implementation capacity is uneven " * 250),
+            "confidence_rationale": "The evidence is consistent across domain experts. " * 300,
+        },
+    }
+
+    prepared, estimated = groq_client._prepare_user_for_token_budget(
+        "Return complete risk synthesis JSON.", json.dumps(payload), 1800
+    )
+
+    assert estimated <= 5500
+    compacted = json.loads(prepared)
+    assert compacted["parsed_policy"]["domain"] == "Infrastructure"
+    assert len(compacted["economic"]["metric_effects"]) <= 4
+
+
 def test_token_budget_is_shared_across_models_by_default(monkeypatch):
     waits = []
     monkeypatch.setenv("GROQ_TOKENS_PER_MINUTE", "100")

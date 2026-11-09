@@ -78,6 +78,25 @@ def test_cache_keys_separate_evidence_mode_domain_model_and_exact_text(monkeypat
     assert cache_ttls() == {"web_ttl_seconds": 3600, "document_ttl_seconds": 0}
 
 
+def test_delete_run_removes_parent_and_related_jobs(isolated_db):
+    async def scenario():
+        parent = new_run_payload("parent", "Policy text", None)
+        child = {
+            **new_run_payload("child", "Child policy", None),
+            "parent_run_id": parent["run_id"],
+            "_job_kind": "chat",
+        }
+        await db.save_run(parent)
+        await db.save_run(child)
+
+        await db.delete_run(parent["run_id"])
+
+        assert await db.get_run(parent["run_id"]) is None
+        assert await db.get_run(child["run_id"]) is None
+
+    asyncio.run(scenario())
+
+
 def test_existing_database_migrates_without_losing_history(isolated_db):
     payload = new_run_payload("legacy", "Prior policy", None)
     with sqlite3.connect(isolated_db) as connection:
@@ -173,8 +192,19 @@ def test_http_contract_dedup_upload_cancel_runtime_and_validation(isolated_db, m
                 assert (await client.post("/api/runs/missing/cancel")).status_code == 404
                 assert (await client.post("/api/runs", json={"policy_text": "   "})).status_code == 422
                 assert (await client.post("/api/runs", json={**body, "analysis_mode": "unlimited"})).status_code == 422
-                assert (await client.post("/api/runs", json={"policy_text": "x" * 200001})).status_code == 422
+                assert (await client.post("/api/runs", json={"policy_text": "x" * 200001})).status_code == 200
                 assert (await client.post("/api/runs/upload", files={"file": ("policy.exe", b"hello")})).status_code == 415
+
+    asyncio.run(scenario())
+
+
+def test_long_policy_text_is_truncated_for_analysis(isolated_db):
+    async def scenario():
+        payload = "A" * 250_000
+        created = await main._submit_run(payload, None, False, "balanced", False)
+        run = await db.get_run(created.run_id)
+        assert run is not None
+        assert len(run["policy_input"]["policy_text"]) == 200_000
 
     asyncio.run(scenario())
 

@@ -23,7 +23,7 @@ MAX_POLICY_CHARACTERS = 200_000
 
 
 class CreateRunRequest(BaseModel):
-    policy_text: str = Field(min_length=1, max_length=MAX_POLICY_CHARACTERS)
+    policy_text: str = Field(min_length=1)
     domain_hint: str | None = Field(default=None, max_length=200)
     web_enabled: bool = True
     analysis_mode: AnalysisMode = "balanced"
