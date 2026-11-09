@@ -158,7 +158,3 @@ Backend tests are available under the `backend/` folder and cover policy flow, q
 - This project is intended for local or controlled internal use.
 - The app is policy-analysis focused and may require a valid Groq account and internet access for optional web retrieval.
 - It stores saved runs locally in SQLite and does not provide authentication or multi-user access by default.
-
-## License
-
-This project does not currently include a specific license file. Please check with the repository owner before public distribution or commercial reuse.
